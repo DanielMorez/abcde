@@ -18,19 +18,20 @@ pnpm build
 pnpm preview
 ```
 
-## Production deployment (Docker + Caddy)
+## Production deployment (Docker + nginx + TLS)
 
-Стек: multi-stage Docker-образ (Node → Caddy) с **automatic HTTPS** (Let's Encrypt, HTTP → HTTPS redirect).
+Стек: multi-stage Docker-образ (Node → nginx) с **Let's Encrypt** (certbot).
 
-Caddy включает HTTPS автоматически для `{$DOMAIN}` в Caddyfile — отдельный `default_server` / ssl-блок как в nginx не нужен.
+Общие HTTP-настройки: [`nginx/default_https.conf`](nginx/default_https.conf). Основной конфиг: [`nginx/nginx.conf.template`](nginx/nginx.conf.template) (envsubst → `/etc/nginx/nginx.conf`).
 
 ### Требования
 
 - VPS с Docker и Docker Compose v2
-- Домен с DNS A/AAAA-записью на IP сервера
+- DNS A/AAAA домена на IP сервера
 - Открытые порты **80** и **443**
+- xhttp backend на хосте, слушает **`0.0.0.0:8081`**
 
-### Шаги деплоя
+### Первый деплой с TLS
 
 1. Скопируйте переменные окружения:
 
@@ -41,85 +42,67 @@ cp .env.example .env
 2. Отредактируйте `.env`:
 
 ```env
-DOMAIN=converter.example.com
+DOMAIN=media.choombavpn.com
 ACME_EMAIL=admin@example.com
 ```
 
-3. Соберите и запустите:
+3. Инициализация сертификата и запуск:
 
 ```bash
-docker compose up -d --build
+chmod +x scripts/init-certs.sh
+./scripts/init-certs.sh
+docker compose up -d
 ```
 
-4. Проверьте статус:
+Скрипт создаёт временный сертификат (чтобы nginx стартовал), запрашивает Let's Encrypt через webroot и перезагружает nginx.
+
+4. Проверка:
 
 ```bash
-docker compose ps
-docker compose logs -f caddy
+docker compose exec nginx nginx -t
+curl -sI "https://media.choombavpn.com/"
 ```
 
-Caddy автоматически получит TLS-сертификат и перенаправит HTTP → HTTPS.
-
-### Маршрутизация (handle)
+### Маршрутизация
 
 | Путь | Куда |
 |------|------|
-| `/api/stream*` | `reverse_proxy` на `host.docker.internal:8080` (xhttp на хосте) |
-| `/` и остальные | SPA: `try_files` → `index.html`, `file_server` в `/srv` |
+| HTTP `/_` (не домен) | `404` |
+| HTTP домена | `301` → HTTPS |
+| HTTPS `/_` (не домен) | `ssl_reject_handshake` |
+| `/api/stream` | `proxy_pass` → `host.docker.internal:8081` |
+| `/` и остальное | SPA: `try_files` → `index.html` |
 
-### Проверка после деплоя
-
-```bash
-docker compose build --no-cache && docker compose up -d
-docker compose exec caddy caddy validate --config /etc/caddy/Caddyfile
-
-# HTTP → HTTPS redirect
-curl -sI -H "Host: $DOMAIN" http://127.0.0.1/
-
-# /api/stream — backend или 502, но не HTML SPA
-curl -s -H "Host: $DOMAIN" http://127.0.0.1/api/stream | head -3
-
-# главная — HTML приложения
-curl -s "https://$DOMAIN/" | grep -o '<title>.*</title>'
-```
-
-Проверка xhttp backend (должен слушать `127.0.0.1:8080` или `0.0.0.0:8080`):
+### Проверка
 
 ```bash
-curl -v http://127.0.0.1:8080/api/stream
+docker compose exec nginx wget -S -O- "http://host.docker.internal:8081/api/stream"
+curl -sI "https://media.choombavpn.com/api/stream" | head -10
 ```
 
-Проверка upstream из Docker-контейнera (если backend на хосте — `127.0.0.1` внутри контейнera не подойдёт, используйте `network_mode: host`):
+### Cloudflare
 
-```bash
-docker compose exec caddy wget -S -O- "http://host.docker.internal:8080/api/stream"
-```
+Если домен за Cloudflare — режим **Full (strict)** после выпуска LE-сертификата. Для `/api/stream` — **Cache: Bypass**.
 
 ### Полезные команды
 
 ```bash
-# Пересборка после изменений
 docker compose up -d --build
-
-# Остановка
+docker compose exec nginx nginx -s reload
+docker compose logs -f certbot
 docker compose down
-
-# Остановка с удалением сертификатов (осторожно!)
-docker compose down -v
 ```
 
 ### Troubleshooting
 
 | Проблема | Решение |
 |----------|---------|
-| Сертификат не выдаётся | Проверьте DNS, порты 80/443 и логи `docker compose logs caddy` |
-| 502 Bad Gateway | `handle /api/stream*` работает, но backend на `:8080` недоступен |
-| HTML главной на `/api/stream` | Старый образ — `docker compose up -d --build` |
-| Connection refused на :8080 | xhttp-сервис не запущен или слушает только другой интерфейс |
-| Изменения не видны | `docker compose up -d --build` |
+| nginx не стартует (нет cert) | `./scripts/init-certs.sh` |
+| 502 на `/api/stream` | Backend на :8081 не запущен или слушает только `127.0.0.1` |
+| ACME fail | DNS, порты 80/443, логи `docker compose logs certbot` |
 
 ## Стек
 
 - React 18 + Vite 6 + Tailwind CSS 4
-- Caddy 2 (static file server, gzip/zstd, security headers)
+- nginx 1.27 + certbot
 - Docker Compose

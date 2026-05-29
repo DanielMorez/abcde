@@ -13,9 +13,12 @@ COPY src ./src
 
 RUN pnpm build
 
-FROM caddy:2-alpine
+FROM nginx:1.27-alpine
 
-COPY --from=builder /app/dist /srv
-COPY Caddyfile /etc/caddy/Caddyfile
+RUN rm -f /etc/nginx/conf.d/default.conf
+
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx/default_https.conf /etc/nginx/default_https.conf
+COPY nginx/nginx.conf.template /etc/nginx/templates/nginx.conf.template
 
 EXPOSE 80 443
