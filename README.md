@@ -20,7 +20,9 @@ pnpm preview
 
 ## Production deployment (Docker + Caddy)
 
-Стек: multi-stage Docker-образ (Node → Caddy) с автоматическим HTTPS через Let's Encrypt.
+Стек: multi-stage Docker-образ (Node → Caddy) с **automatic HTTPS** (Let's Encrypt, HTTP → HTTPS redirect).
+
+Caddy включает HTTPS автоматически для `{$DOMAIN}` в Caddyfile — отдельный `default_server` / ssl-блок как в nginx не нужен.
 
 ### Требования
 
@@ -41,7 +43,7 @@ cp .env.example .env
 ```env
 DOMAIN=converter.example.com
 ACME_EMAIL=admin@example.com
-STREAM_UPSTREAM=host.docker.internal:88
+STREAM_UPSTREAM=172.17.0.1:88
 ```
 
 3. Соберите и запустите:
@@ -59,14 +61,32 @@ docker compose logs -f web
 
 Caddy автоматически получит TLS-сертификат и перенаправит HTTP → HTTPS.
 
-### Маршрутизация
+### Маршрутизация (handle)
 
 | Путь | Куда |
 |------|------|
-| `/` и остальные | Статический SPA (`/srv`) |
-| `/api/stream` | Reverse proxy на `STREAM_UPSTREAM` (по умолчанию `172.17.0.1:88` — IP хоста из Docker-сети) |
+| `/api/stream*` | `reverse_proxy` на `STREAM_UPSTREAM` (по умолчанию `172.17.0.1:88`) |
+| `/` и остальные | SPA: `try_files` → `index.html`, `file_server` |
+
+Security headers (CSP, HSTS) применяются только к SPA, не к `/api/stream`.
 
 Если stream-сервис в другом Docker-контейнере, укажите его hostname, например `STREAM_UPSTREAM=stream:88`.
+
+### Проверка после деплоя
+
+```bash
+docker compose build --no-cache && docker compose up -d
+docker compose exec web caddy validate --config /etc/caddy/Caddyfile
+
+# HTTP → HTTPS redirect
+curl -sI -H "Host: $DOMAIN" http://127.0.0.1/
+
+# /api/stream — backend или 502, но не HTML SPA
+curl -s -H "Host: $DOMAIN" http://127.0.0.1/api/stream | head -3
+
+# главная — HTML приложения
+curl -s "https://$DOMAIN/" | grep -o '<title>.*</title>'
+```
 
 Проверка upstream из контейнera:
 
@@ -96,8 +116,9 @@ docker compose down -v
 | Проблема | Решение |
 |----------|---------|
 | Сертификат не выдаётся | Проверьте DNS, порты 80/443 и логи `docker compose logs web` |
-| 502 Bad Gateway | Route работает, но upstream на :88 недоступен |
-| HTML главной на `/api/stream` | Старый Caddyfile в контейнере — пересоберите образ |
+| 502 Bad Gateway | `handle /api/stream*` работает, но upstream на :88 недоступен |
+| HTML главной на `/api/stream` | Старый образ — `docker compose up -d --build` |
+| Connection refused на :88 | Backend не запущен или слушает только `127.0.0.1:88` |
 | Изменения не видны | `docker compose up -d --build` |
 
 ## Стек

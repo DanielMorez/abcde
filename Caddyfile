@@ -1,9 +1,14 @@
 {
 	email {$ACME_EMAIL}
+	servers {
+		trusted_proxies_strict
+	}
 }
 
 {$DOMAIN} {
-	route /api/stream* {
+	encode gzip zstd
+
+	handle /api/stream* {
 		reverse_proxy {$STREAM_UPSTREAM} {
 			flush_interval -1
 			transport http {
@@ -13,9 +18,9 @@
 		}
 	}
 
-	route {
+	handle {
 		root * /srv
-		encode gzip zstd
+		try_files {path} /index.html
 		file_server
 
 		header {
@@ -28,7 +33,5 @@
 		}
 
 		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
-
-		try_files {path} /index.html
 	}
 }
