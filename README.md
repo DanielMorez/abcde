@@ -15,7 +15,7 @@ pnpm dev
 
 `network_mode: host` — nginx видит `127.0.0.1:8080` на хосте.
 
-Домен и пути к сертификатам прописаны в `nginx.conf` (`media.choombavpn.com`).
+Домен и пути к сертификатам прописаны в `nginx.conf` (`pl2.choombavpn.com`).
 
 ### Первый запуск
 
@@ -39,5 +39,5 @@ Backend xhttp: **`127.0.0.1:8080`** на хосте.
 
 ```bash
 docker compose exec nginx nginx -t
-curl -sI "https://media.choombavpn.com/"
+curl -sI "https://pl2.choombavpn.com/"
 ```

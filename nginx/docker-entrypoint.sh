@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-DOMAIN="media.choombavpn.com"
+DOMAIN="pl2.choombavpn.com"
 CERT_DIR="/etc/letsencrypt/live/${DOMAIN}"
 
 if [ ! -f "${CERT_DIR}/fullchain.pem" ] || [ ! -f "${CERT_DIR}/privkey.pem" ]; then

@@ -9,7 +9,7 @@ services:
     command:
       - -c
       - |
-        DOMAIN=media.choombavpn.com
+        DOMAIN=pl2.choombavpn.com
         if [ ! -f "/etc/letsencrypt/live/$${DOMAIN}/fullchain.pem" ]; then
           echo "Creating dummy certificate for $${DOMAIN}..."
           mkdir -p "/etc/letsencrypt/live/$${DOMAIN}"
