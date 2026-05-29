@@ -15,9 +15,15 @@ RUN pnpm build
 
 FROM nginx:1.27-alpine
 
-RUN rm -f /etc/nginx/conf.d/default.conf
+RUN apk add --no-cache openssl \
+  && rm -f /etc/nginx/conf.d/default.conf
 
 COPY --from=builder /app/dist /var/www/html
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
+COPY nginx/docker-entrypoint.sh /docker-entrypoint-custom.sh
+RUN chmod +x /docker-entrypoint-custom.sh
 
 EXPOSE 80 443
+
+ENTRYPOINT ["/docker-entrypoint-custom.sh"]
+CMD ["nginx", "-g", "daemon off;"]
