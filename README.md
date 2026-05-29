@@ -43,7 +43,6 @@ cp .env.example .env
 ```env
 DOMAIN=converter.example.com
 ACME_EMAIL=admin@example.com
-STREAM_UPSTREAM=172.17.0.1:88
 ```
 
 3. Соберите и запустите:
@@ -65,12 +64,8 @@ Caddy автоматически получит TLS-сертификат и пе
 
 | Путь | Куда |
 |------|------|
-| `/api/stream*` | `reverse_proxy` на `STREAM_UPSTREAM` (по умолчанию `172.17.0.1:88`) |
-| `/` и остальные | SPA: `try_files` → `index.html`, `file_server` |
-
-Security headers (CSP, HSTS) применяются только к SPA, не к `/api/stream`.
-
-Если stream-сервис в другом Docker-контейнере, укажите его hostname, например `STREAM_UPSTREAM=stream:88`.
+| `/api/stream*` | `reverse_proxy` на `127.0.0.1:8080` (VLESS xhttp) |
+| `/` и остальные | SPA: `try_files` → `index.html`, `file_server` в `/srv` |
 
 ### Проверка после деплоя
 
@@ -88,14 +83,16 @@ curl -s -H "Host: $DOMAIN" http://127.0.0.1/api/stream | head -3
 curl -s "https://$DOMAIN/" | grep -o '<title>.*</title>'
 ```
 
-Проверка upstream из контейнera:
+Проверка xhttp backend (должен слушать `127.0.0.1:8080` или `0.0.0.0:8080`):
 
 ```bash
-# Узнать IP шлюза (если 172.17.0.1 не подходит)
-docker compose exec web ip route | awk '/default/ {print $3}'
+curl -v http://127.0.0.1:8080/api/stream
+```
 
-# Проверить доступность stream-сервиса
-docker compose exec web wget -S -O- "http://172.17.0.1:88/api/stream"
+Проверка upstream из Docker-контейнera (если backend на хосте — `127.0.0.1` внутри контейнera не подойдёт, используйте `network_mode: host`):
+
+```bash
+docker compose exec web wget -S -O- "http://127.0.0.1:8080/api/stream"
 ```
 
 ### Полезные команды
@@ -116,9 +113,9 @@ docker compose down -v
 | Проблема | Решение |
 |----------|---------|
 | Сертификат не выдаётся | Проверьте DNS, порты 80/443 и логи `docker compose logs web` |
-| 502 Bad Gateway | `handle /api/stream*` работает, но upstream на :88 недоступен |
+| 502 Bad Gateway | `handle /api/stream*` работает, но backend на `:8080` недоступен |
 | HTML главной на `/api/stream` | Старый образ — `docker compose up -d --build` |
-| Connection refused на :88 | Backend не запущен или слушает только `127.0.0.1:88` |
+| Connection refused на :8080 | xhttp-сервис не запущен или слушает только другой интерфейс |
 | Изменения не видны | `docker compose up -d --build` |
 
 ## Стек
