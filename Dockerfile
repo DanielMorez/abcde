@@ -17,8 +17,7 @@ FROM nginx:1.27-alpine
 
 RUN rm -f /etc/nginx/conf.d/default.conf
 
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx/default_https.conf /etc/nginx/default_https.conf
-COPY nginx/nginx.conf.template /etc/nginx/templates/nginx.conf.template
+COPY --from=builder /app/dist /var/www/html
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80 443
