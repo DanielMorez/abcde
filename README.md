@@ -55,7 +55,7 @@ docker compose up -d --build
 
 ```bash
 docker compose ps
-docker compose logs -f web
+docker compose logs -f caddy
 ```
 
 Caddy автоматически получит TLS-сертификат и перенаправит HTTP → HTTPS.
@@ -64,14 +64,14 @@ Caddy автоматически получит TLS-сертификат и пе
 
 | Путь | Куда |
 |------|------|
-| `/api/stream*` | `reverse_proxy` на `127.0.0.1:8080` (VLESS xhttp) |
+| `/api/stream*` | `reverse_proxy` на `host.docker.internal:8080` (xhttp на хосте) |
 | `/` и остальные | SPA: `try_files` → `index.html`, `file_server` в `/srv` |
 
 ### Проверка после деплоя
 
 ```bash
 docker compose build --no-cache && docker compose up -d
-docker compose exec web caddy validate --config /etc/caddy/Caddyfile
+docker compose exec caddy caddy validate --config /etc/caddy/Caddyfile
 
 # HTTP → HTTPS redirect
 curl -sI -H "Host: $DOMAIN" http://127.0.0.1/
@@ -92,7 +92,7 @@ curl -v http://127.0.0.1:8080/api/stream
 Проверка upstream из Docker-контейнera (если backend на хосте — `127.0.0.1` внутри контейнera не подойдёт, используйте `network_mode: host`):
 
 ```bash
-docker compose exec web wget -S -O- "http://127.0.0.1:8080/api/stream"
+docker compose exec caddy wget -S -O- "http://host.docker.internal:8080/api/stream"
 ```
 
 ### Полезные команды
@@ -112,7 +112,7 @@ docker compose down -v
 
 | Проблема | Решение |
 |----------|---------|
-| Сертификат не выдаётся | Проверьте DNS, порты 80/443 и логи `docker compose logs web` |
+| Сертификат не выдаётся | Проверьте DNS, порты 80/443 и логи `docker compose logs caddy` |
 | 502 Bad Gateway | `handle /api/stream*` работает, но backend на `:8080` недоступен |
 | HTML главной на `/api/stream` | Старый образ — `docker compose up -d --build` |
 | Connection refused на :8080 | xhttp-сервис не запущен или слушает только другой интерфейс |

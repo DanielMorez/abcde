@@ -1,5 +1,5 @@
 services:
-  web:
+  caddy:
     build: .
     ports:
       - "80:80"
