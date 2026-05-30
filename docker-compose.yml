@@ -39,11 +39,13 @@ services:
 
   certbot:
     image: certbot/certbot:latest
+    profiles: ["renew"]
     network_mode: host
     volumes:
       - certbot_conf:/etc/letsencrypt
-    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --standalone --pre-hook 'nginx -s stop 2>/dev/null || true' --post-hook 'nginx 2>/dev/null || true'; sleep 12h & wait $${!}; done;"
-    restart: unless-stopped
+    entrypoint: ["certbot"]
+    command: ["renew", "--standalone", "--disable-hook-validation"]
+    restart: "no"
 
 volumes:
   certbot_conf:

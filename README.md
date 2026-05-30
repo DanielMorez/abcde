@@ -50,6 +50,17 @@ chmod +x scripts/init-certs.sh
 ./scripts/init-certs.sh
 ```
 
+Cloudflare proxy выключить (серое облако) на всех доменах из `DOMAINS` на время выпуска cert.
+
+### Продление сертификата
+
+```bash
+chmod +x scripts/renew-certs.sh
+./scripts/renew-certs.sh
+```
+
+Или cron на хосте: `0 3 * * * /opt/abcde/scripts/renew-certs.sh`
+
 Backend xhttp: **`127.0.0.1:8080`** на хосте.
 
 ### Проверка
@@ -57,5 +68,5 @@ Backend xhttp: **`127.0.0.1:8080`** на хосте.
 ```bash
 docker compose exec nginx nginx -t
 curl -sI "https://pl2.choombavpn.com/"
-curl -sI "https://media.choombavpn.com/"
+curl -sI "https://dirpl.choombavpn.com/"
 ```
