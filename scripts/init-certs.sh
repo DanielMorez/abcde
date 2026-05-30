@@ -15,21 +15,7 @@ fi
 DOMAINS="${DOMAINS:-pl2.choombavpn.com media.choombavpn.com}"
 PRIMARY_DOMAIN="${PRIMARY_DOMAIN:-pl2.choombavpn.com}"
 
-echo "Creating dummy certificate for ${PRIMARY_DOMAIN} (if missing)..."
-docker compose run --rm --entrypoint sh certbot -c "
-  if [ ! -f /etc/letsencrypt/live/${PRIMARY_DOMAIN}/fullchain.pem ]; then
-    mkdir -p /etc/letsencrypt/live/${PRIMARY_DOMAIN}
-    openssl req -x509 -nodes -newkey rsa:4096 -days 1 \
-      -keyout /etc/letsencrypt/live/${PRIMARY_DOMAIN}/privkey.pem \
-      -out /etc/letsencrypt/live/${PRIMARY_DOMAIN}/fullchain.pem \
-      -subj '/CN=${PRIMARY_DOMAIN}'
-  fi
-"
-
-echo "Starting nginx..."
-docker compose up -d nginx
-
-echo "Stopping nginx for standalone ACME..."
+echo "Stopping nginx..."
 docker compose stop nginx
 
 echo "Removing broken certbot hooks from renewal config (if any)..."
@@ -40,11 +26,34 @@ docker compose run --rm --entrypoint sh certbot -c '
   done
 '
 
+echo "Checking existing certificate..."
+HAS_LE=$(docker compose run --rm --entrypoint sh certbot -c "
+  cert='/etc/letsencrypt/live/${PRIMARY_DOMAIN}/fullchain.pem'
+  if [ -f \"\$cert\" ] && openssl x509 -in \"\$cert\" -noout -issuer 2>/dev/null | grep -qi 'lets encrypt'; then
+    echo LE_YES
+  else
+    echo LE_NO
+  fi
+" | grep -E '^LE_(YES|NO)$' | tail -1)
+
+if [ "${HAS_LE}" = "LE_YES" ]; then
+  echo "Valid Let's Encrypt certificate found, will expand if needed."
+  EXPAND_FLAG="--expand"
+else
+  echo "Removing self-signed or broken certificate for ${PRIMARY_DOMAIN}..."
+  docker compose run --rm --entrypoint sh certbot -c "
+    rm -rf /etc/letsencrypt/live/${PRIMARY_DOMAIN}
+    rm -rf /etc/letsencrypt/archive/${PRIMARY_DOMAIN}
+    rm -f /etc/letsencrypt/renewal/${PRIMARY_DOMAIN}.conf
+  "
+  EXPAND_FLAG=""
+fi
+
 echo "Requesting Let's Encrypt certificate for: ${DOMAINS}"
 # shellcheck disable=SC2086
 docker compose run --rm --entrypoint certbot certbot certonly --standalone \
   --cert-name "${PRIMARY_DOMAIN}" \
-  --expand \
+  ${EXPAND_FLAG} \
   --disable-hook-validation \
   $(for d in ${DOMAINS}; do printf '%s ' "-d ${d}"; done) \
   --email "${ACME_EMAIL}" \
@@ -53,5 +62,9 @@ docker compose run --rm --entrypoint certbot certbot certonly --standalone \
 
 echo "Starting nginx..."
 docker compose up -d nginx
+
+echo "Verify:"
+docker compose exec nginx sh -c \
+  "openssl x509 -in /etc/letsencrypt/live/${PRIMARY_DOMAIN}/fullchain.pem -noout -issuer -ext subjectAltName"
 
 echo "Done."
