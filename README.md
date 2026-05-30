@@ -11,11 +11,31 @@ pnpm dev
 
 ## Production (Docker + nginx)
 
-Один конфиг: [`nginx/nginx.conf`](nginx/nginx.conf) — без template и `conf.d`.
+Шаблон: [`nginx/nginx.conf.template`](nginx/nginx.conf.template) — поддомены подставляются из `.env` при старте контейнера.
 
 `network_mode: host` — nginx видит `127.0.0.1:8080` на хосте.
 
-Домен и пути к сертификатам прописаны в `nginx.conf` (`pl2.choombavpn.com`).
+### `.env`
+
+```bash
+cp .env.example .env
+```
+
+| Переменная | Описание |
+|---|---|
+| `DOMAINS` | Поддомены через пробел |
+| `PRIMARY_DOMAIN` | Первый домен — путь к сертификату LE |
+| `ACME_EMAIL` | Email для Let's Encrypt |
+
+Пример:
+
+```env
+DOMAINS="pl2.choombavpn.com media.choombavpn.com"
+PRIMARY_DOMAIN=pl2.choombavpn.com
+ACME_EMAIL=admin@example.com
+```
+
+Один SAN-сертификат хранится в `/etc/letsencrypt/live/${PRIMARY_DOMAIN}/`.
 
 ### Первый запуск
 
@@ -23,12 +43,9 @@ pnpm dev
 docker compose up -d --build
 ```
 
-При первом запуске `cert-init` создаёт временный self-signed сертификат, чтобы nginx не падал.
-
 ### Let's Encrypt (один раз)
 
 ```bash
-cp .env.example .env   # укажите ACME_EMAIL
 chmod +x scripts/init-certs.sh
 ./scripts/init-certs.sh
 ```
@@ -40,4 +57,5 @@ Backend xhttp: **`127.0.0.1:8080`** на хосте.
 ```bash
 docker compose exec nginx nginx -t
 curl -sI "https://pl2.choombavpn.com/"
+curl -sI "https://media.choombavpn.com/"
 ```

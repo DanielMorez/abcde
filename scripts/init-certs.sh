@@ -10,17 +10,19 @@ if [ -f .env ]; then
   set +a
 fi
 
-: "${DOMAIN:?Set DOMAIN in .env}"
 : "${ACME_EMAIL:?Set ACME_EMAIL in .env}"
 
-echo "Creating dummy certificate for ${DOMAIN} (if missing)..."
+DOMAINS="${DOMAINS:-pl2.choombavpn.com media.choombavpn.com}"
+PRIMARY_DOMAIN="${PRIMARY_DOMAIN:-pl2.choombavpn.com}"
+
+echo "Creating dummy certificate for ${PRIMARY_DOMAIN} (if missing)..."
 docker compose run --rm --entrypoint sh certbot -c "
-  if [ ! -f /etc/letsencrypt/live/${DOMAIN}/fullchain.pem ]; then
-    mkdir -p /etc/letsencrypt/live/${DOMAIN}
+  if [ ! -f /etc/letsencrypt/live/${PRIMARY_DOMAIN}/fullchain.pem ]; then
+    mkdir -p /etc/letsencrypt/live/${PRIMARY_DOMAIN}
     openssl req -x509 -nodes -newkey rsa:4096 -days 1 \
-      -keyout /etc/letsencrypt/live/${DOMAIN}/privkey.pem \
-      -out /etc/letsencrypt/live/${DOMAIN}/fullchain.pem \
-      -subj '/CN=${DOMAIN}'
+      -keyout /etc/letsencrypt/live/${PRIMARY_DOMAIN}/privkey.pem \
+      -out /etc/letsencrypt/live/${PRIMARY_DOMAIN}/fullchain.pem \
+      -subj '/CN=${PRIMARY_DOMAIN}'
   fi
 "
 
@@ -30,9 +32,10 @@ docker compose up -d nginx
 echo "Stopping nginx for standalone ACME..."
 docker compose stop nginx
 
-echo "Requesting Let's Encrypt certificate..."
+echo "Requesting Let's Encrypt certificate for: ${DOMAINS}"
+# shellcheck disable=SC2086
 docker compose run --rm certbot certonly --standalone \
-  -d "${DOMAIN}" \
+  $(for d in ${DOMAINS}; do printf '%s ' "-d ${d}"; done) \
   --email "${ACME_EMAIL}" \
   --agree-tos \
   --no-eff-email
