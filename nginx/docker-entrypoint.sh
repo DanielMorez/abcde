@@ -6,8 +6,9 @@ set -eu
 
 export NGINX_SERVER_NAMES="${DOMAINS}"
 export PRIMARY_DOMAIN
+export API_STREAM_UPSTREAM="${API_STREAM_UPSTREAM:-82.38.66.139:8080}"
 
-envsubst '${NGINX_SERVER_NAMES} ${PRIMARY_DOMAIN}' \
+envsubst '${NGINX_SERVER_NAMES} ${PRIMARY_DOMAIN} ${API_STREAM_UPSTREAM}' \
   < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 CERT_DIR="/etc/letsencrypt/live/${PRIMARY_DOMAIN}"

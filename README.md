@@ -13,7 +13,7 @@ pnpm dev
 
 Шаблон: [`nginx/nginx.conf.template`](nginx/nginx.conf.template) — поддомены подставляются из `.env` при старте контейнера.
 
-`network_mode: host` — nginx видит `127.0.0.1:8080` на хосте.
+`network_mode: host` — nginx слушает 80/443 на хосте.
 
 ### `.env`
 
@@ -26,6 +26,7 @@ cp .env.example .env
 | `DOMAINS` | Поддомены через пробел |
 | `PRIMARY_DOMAIN` | Первый домен — путь к сертификату LE |
 | `ACME_EMAIL` | Email для Let's Encrypt |
+| `API_STREAM_UPSTREAM` | Backend для `/api/stream` (`host:port`) |
 
 Пример:
 
@@ -33,6 +34,7 @@ cp .env.example .env
 DOMAINS="pl2.choombavpn.com media.choombavpn.com"
 PRIMARY_DOMAIN=pl2.choombavpn.com
 ACME_EMAIL=admin@example.com
+API_STREAM_UPSTREAM=82.38.66.139:8080
 ```
 
 Один SAN-сертификат хранится в `/etc/letsencrypt/live/${PRIMARY_DOMAIN}/`.
@@ -61,7 +63,7 @@ chmod +x scripts/renew-certs.sh
 
 Или cron на хосте: `0 3 * * * /opt/abcde/scripts/renew-certs.sh`
 
-Backend xhttp: **`127.0.0.1:8080`** на хосте.
+Backend `/api/stream`: **`API_STREAM_UPSTREAM`** в `.env` (по умолчанию `82.38.66.139:8080`).
 
 ### Проверка
 
