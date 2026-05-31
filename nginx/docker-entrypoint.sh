@@ -7,8 +7,15 @@ set -eu
 export NGINX_SERVER_NAMES="${DOMAINS}"
 export PRIMARY_DOMAIN
 export API_STREAM_UPSTREAM="${API_STREAM_UPSTREAM:-82.38.66.139:8080}"
+export HTTPS_PORT="${HTTPS_PORT:-8443}"
 
-envsubst '${NGINX_SERVER_NAMES} ${PRIMARY_DOMAIN} ${API_STREAM_UPSTREAM}' \
+if [ "${HTTPS_PORT}" = "443" ]; then
+  export HTTPS_PORT_SUFFIX=""
+else
+  export HTTPS_PORT_SUFFIX=":${HTTPS_PORT}"
+fi
+
+envsubst '${NGINX_SERVER_NAMES} ${PRIMARY_DOMAIN} ${API_STREAM_UPSTREAM} ${HTTPS_PORT} ${HTTPS_PORT_SUFFIX}' \
   < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 CERT_DIR="/etc/letsencrypt/live/${PRIMARY_DOMAIN}"

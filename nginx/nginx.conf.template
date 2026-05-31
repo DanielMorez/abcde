@@ -24,20 +24,20 @@ http {
         listen [::]:80;
         server_name ${NGINX_SERVER_NAMES};
 
-        return 301 https://$host$request_uri;
+        return 301 https://$host${HTTPS_PORT_SUFFIX}$request_uri;
     }
 
     server {
-        listen 443 ssl default_server;
-        listen [::]:443 ssl default_server;
+        listen ${HTTPS_PORT} ssl default_server;
+        listen [::]:${HTTPS_PORT} ssl default_server;
         server_name _;
 
         ssl_reject_handshake on;
     }
 
     server {
-        listen 443 ssl;
-        listen [::]:443 ssl;
+        listen ${HTTPS_PORT} ssl;
+        listen [::]:${HTTPS_PORT} ssl;
         http2 on;
         server_name ${NGINX_SERVER_NAMES};
 

@@ -23,7 +23,7 @@ COPY nginx/nginx.conf.template /etc/nginx/nginx.conf.template
 COPY nginx/docker-entrypoint.sh /docker-entrypoint-custom.sh
 RUN chmod +x /docker-entrypoint-custom.sh
 
-EXPOSE 80 443
+EXPOSE 80 8443
 
 ENTRYPOINT ["/docker-entrypoint-custom.sh"]
 CMD ["nginx", "-g", "daemon off;"]
