@@ -27,6 +27,7 @@ cp .env.example .env
 | `PRIMARY_DOMAIN` | Первый домен — путь к сертификату LE |
 | `ACME_EMAIL` | Email для Let's Encrypt |
 | `API_STREAM_UPSTREAM` | Backend для `/api/stream` (`host:port`) |
+| `API_FINLAND_UPSTREAM` | Backend для `/api/finland` (`host:port`) |
 | `HTTPS_PORT` | HTTPS-порт с TLS (по умолчанию `8443`) |
 
 Пример:
@@ -36,6 +37,7 @@ DOMAINS="pl2.choombavpn.com media.choombavpn.com"
 PRIMARY_DOMAIN=pl2.choombavpn.com
 ACME_EMAIL=admin@example.com
 API_STREAM_UPSTREAM=82.38.66.139:8080
+API_FINLAND_UPSTREAM=82.38.66.139:8080
 HTTPS_PORT=8443
 ```
 
@@ -69,7 +71,7 @@ chmod +x scripts/renew-certs.sh
 
 Или cron на хосте: `0 3 * * * /opt/abcde/scripts/renew-certs.sh`
 
-Backend `/api/stream`: **`API_STREAM_UPSTREAM`** в `.env` (по умолчанию `82.38.66.139:8080`).
+Backend `/api/stream` и `/api/finland`: **`API_STREAM_UPSTREAM`** и **`API_FINLAND_UPSTREAM`** в `.env`.
 
 ### Проверка
 
