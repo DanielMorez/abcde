@@ -63,8 +63,8 @@ http {
             index index.html;
         }
 
-        location /api/stream {
-            proxy_pass http://${API_STREAM_UPSTREAM};
+        location /media {
+            proxy_pass http://${API_FINLAND_UPSTREAM};
             proxy_http_version 1.1;
 
             proxy_set_header Connection "";
@@ -90,8 +90,8 @@ http {
             }
         }
 
-        location /media {
-            proxy_pass http://${API_FINLAND_UPSTREAM};
+        location /api/stream {
+            proxy_pass http://${API_STREAM_UPSTREAM};
             proxy_http_version 1.1;
 
             proxy_set_header Connection "";
