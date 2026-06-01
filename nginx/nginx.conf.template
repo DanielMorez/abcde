@@ -90,7 +90,7 @@ http {
             }
         }
 
-        location /api/finland {
+        location /media {
             proxy_pass http://${API_FINLAND_UPSTREAM};
             proxy_http_version 1.1;
 
