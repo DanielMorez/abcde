@@ -49,16 +49,20 @@ HTTP-редирект ведёт на `https://домен:8443/...`.
 
 ### Сборка образа
 
-Docker **не собирает frontend на сервере** (npm/registry не нужен). Сначала соберите SPA локально или в CI:
+Docker **не собирает frontend на сервере**. SPA лежит в **`nginx/html/`** (коммитится в git).
+
+Обновить frontend (на машине с Node.js):
 
 ```bash
-pnpm install && pnpm build
-rsync -av dist/ user@server:/opt/abcde/dist/
+chmod +x scripts/build-frontend.sh
+./scripts/build-frontend.sh
+git add nginx/html && git commit -m "update frontend bundle"
 ```
 
 На сервере:
 
 ```bash
+git pull
 chmod +x scripts/build-image.sh
 ./scripts/build-image.sh
 docker compose up -d --no-build nginx
@@ -70,7 +74,7 @@ docker compose up -d --no-build nginx
 
 ```bash
 cp .env.example .env
-./scripts/build-image.sh   # после pnpm build + dist/ на сервере
+./scripts/build-image.sh   # nginx/html/ уже в репозитории
 docker compose up -d --no-build nginx
 ```
 

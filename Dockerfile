@@ -2,7 +2,7 @@ FROM nginx:1.27-alpine
 
 RUN rm -f /etc/nginx/conf.d/default.conf
 
-COPY dist /var/www/html
+COPY nginx/html /var/www/html
 RUN mkdir -p /var/www/static
 COPY bfoto_ru_4762.jpg /var/www/static/bfoto_ru_4762.jpg
 COPY nginx/nginx.conf.template /etc/nginx/nginx.conf.template
