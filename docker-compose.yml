@@ -1,8 +1,35 @@
 services:
+  cert-init:
+    image: certbot/certbot:latest
+    network_mode: host
+    env_file: .env
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+    restart: "no"
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        : "$${PRIMARY_DOMAIN:?Set PRIMARY_DOMAIN in .env}"
+        cert="/etc/letsencrypt/live/$${PRIMARY_DOMAIN}/fullchain.pem"
+        if [ -f "$$cert" ]; then
+          echo "Certificate already present for $${PRIMARY_DOMAIN}."
+          exit 0
+        fi
+        echo "Creating dummy certificate for $${PRIMARY_DOMAIN}..."
+        mkdir -p "/etc/letsencrypt/live/$${PRIMARY_DOMAIN}"
+        openssl req -x509 -nodes -newkey rsa:4096 -days 1 \
+          -keyout "/etc/letsencrypt/live/$${PRIMARY_DOMAIN}/privkey.pem" \
+          -out "/etc/letsencrypt/live/$${PRIMARY_DOMAIN}/fullchain.pem" \
+          -subj "/CN=$${PRIMARY_DOMAIN}"
+
   nginx:
     build: .
     network_mode: host
     env_file: .env
+    depends_on:
+      cert-init:
+        condition: service_completed_successfully
     volumes:
       - certbot_conf:/etc/letsencrypt
     restart: unless-stopped

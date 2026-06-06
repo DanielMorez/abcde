@@ -15,8 +15,7 @@ RUN pnpm build
 
 FROM nginx:1.27-alpine
 
-RUN apk add --no-cache openssl gettext \
-  && rm -f /etc/nginx/conf.d/default.conf
+RUN rm -f /etc/nginx/conf.d/default.conf
 
 COPY --from=builder /app/dist /var/www/html
 RUN mkdir -p /var/www/static
