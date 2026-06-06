@@ -47,10 +47,31 @@ HTTP-редирект ведёт на `https://домен:8443/...`.
 
 Один SAN-сертификат хранится в `/etc/letsencrypt/live/${PRIMARY_DOMAIN}/`.
 
+### Сборка образа
+
+Docker **не собирает frontend на сервере** (npm/registry не нужен). Сначала соберите SPA локально или в CI:
+
+```bash
+pnpm install && pnpm build
+rsync -av dist/ user@server:/opt/abcde/dist/
+```
+
+На сервере:
+
+```bash
+chmod +x scripts/build-image.sh
+./scripts/build-image.sh
+docker compose up -d --no-build nginx
+```
+
+`init-certs.sh` и `renew-certs.sh` **не пересобирают** образ (`--no-build`).
+
 ### Первый запуск
 
 ```bash
-docker compose up -d --build
+cp .env.example .env
+./scripts/build-image.sh   # после pnpm build + dist/ на сервере
+docker compose up -d --no-build nginx
 ```
 
 ### Let's Encrypt (один раз)

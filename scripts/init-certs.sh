@@ -61,10 +61,10 @@ docker compose run --rm --entrypoint certbot certbot certonly --standalone \
   --no-eff-email
 
 echo "Starting nginx..."
-docker compose up -d nginx
+docker compose up -d --no-build nginx
 
 echo "Verify:"
-docker compose exec nginx sh -c \
+docker compose run --rm --entrypoint sh certbot -c \
   "openssl x509 -in /etc/letsencrypt/live/${PRIMARY_DOMAIN}/fullchain.pem -noout -issuer -ext subjectAltName"
 
 echo "Done."
