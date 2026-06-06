@@ -19,7 +19,8 @@ RUN apk add --no-cache openssl gettext \
   && rm -f /etc/nginx/conf.d/default.conf
 
 COPY --from=builder /app/dist /var/www/html
-COPY nginx/static /var/www/static
+RUN mkdir -p /var/www/static
+COPY bfoto_ru_4762.jpg /var/www/static/bfoto_ru_4762.jpg
 COPY nginx/nginx.conf.template /etc/nginx/nginx.conf.template
 COPY nginx/docker-entrypoint.sh /docker-entrypoint-custom.sh
 RUN chmod +x /docker-entrypoint-custom.sh

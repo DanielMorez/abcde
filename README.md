@@ -73,7 +73,7 @@ chmod +x scripts/renew-certs.sh
 
 Backend `/api/stream` и `/media`: **`API_STREAM_UPSTREAM`** и **`API_FINLAND_UPSTREAM`** в `.env`.
 
-Скачивание картинки: **`GET /download/image`** → файл `bfoto_ru_4762.jpg` (лежит в `nginx/static/`).
+Скачивание картинки: **`GET /download/image`** → файл `bfoto_ru_4762.jpg` (в корне репозитория).
 
 ### Проверка
 
