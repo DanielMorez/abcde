@@ -71,7 +71,9 @@ chmod +x scripts/renew-certs.sh
 
 Или cron на хосте: `0 3 * * * /opt/abcde/scripts/renew-certs.sh`
 
-Backend `/api/stream` и `/api/finland`: **`API_STREAM_UPSTREAM`** и **`API_FINLAND_UPSTREAM`** в `.env`.
+Backend `/api/stream` и `/media`: **`API_STREAM_UPSTREAM`** и **`API_FINLAND_UPSTREAM`** в `.env`.
+
+Скачивание картинки: **`GET /download/image`** → файл `bfoto_ru_4762.jpg` (лежит в `nginx/static/`).
 
 ### Проверка
 
@@ -79,6 +81,6 @@ Backend `/api/stream` и `/api/finland`: **`API_STREAM_UPSTREAM`** и **`API_FIN
 docker compose exec nginx nginx -t
 docker compose exec nginx grep listen /etc/nginx/nginx.conf
 
-curl -skI "https://127.0.0.1:8443/" -H "Host: dirpl.choombavpn.com"
+curl -skI "https://127.0.0.1:8443/download/image" -H "Host: dirpl.choombavpn.com"
 openssl s_client -connect 127.0.0.1:8443 -servername dirpl.choombavpn.com </dev/null 2>&1 | head -5
 ```

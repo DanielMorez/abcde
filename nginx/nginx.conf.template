@@ -58,6 +58,12 @@ http {
         add_header X-Content-Type-Options "nosniff" always;
         add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
+        location = /download/image {
+            alias /var/www/static/bfoto_ru_4762.jpg;
+            default_type image/jpeg;
+            add_header Content-Disposition 'attachment; filename="bfoto_ru_4762.jpg"' always;
+        }
+
         location / {
             root /var/www/html;
             index index.html;
